@@ -245,14 +245,14 @@ BGL_TESTS =\
   test/validationinterface_tests.cpp \
   test/versionbits_tests.cpp
 
-if ENABLE_PROPERTY_TESTS
-BGL_TESTS += \
-  test/key_properties.cpp
+#if ENABLE_PROPERTY_TESTS
+#BGL_TESTS += \
+#  test/key_properties.cpp
 
-BGL_TEST_SUITE += \
-  test/gen/crypto_gen.cpp \
-  test/gen/crypto_gen.h
-endif
+#BGL_TEST_SUITE += \
+ # test/gen/crypto_gen.cpp \
+  #test/gen/crypto_gen.h
+#endif
 
 if ENABLE_WALLET
 BGL_TESTS += \

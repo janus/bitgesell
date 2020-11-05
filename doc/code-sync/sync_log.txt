@@ -1026,3 +1026,128 @@ v  2020-03-31 14:36:02 f6da44ccce4cfff53433e665305a6fe0a01364e4 wallet: Avoid us
 v  2020-03-31 14:36:02 f7ba881bc669451a60fedac58a449794702a3e23 wallet: Avoid use of Chain::Lock in listsinceblock
 v  2020-03-31 16:07:33 bda84a08a0ac92dff6cadc99cf9bb8c3fadd7e13 rpc: Add documentation for deactivating settxfee
 -- end of processed commits --
+
+pr 2020-03-31 21:35:03 +0100 d2db25233cf0dd1d2668a4aafc4fc94c47c11849 Merge #18474: test: check that peer is connected when calling sync_*
+c  2020-03-31 22:03:03 +0100 fa9064704524a0fd1fa9ea73eea45b07316ac3d1 test: Wait for both veracks in add_p2p_connection
+cr 2020-03-31 22:03:24 +0100 faf1d047313e71658fb31f6b94fdd5d37705ab85 test: Remove redundant sync_with_ping after add_p2p_connection
+c  2020-03-31 22:11:47 +0100 7777703958937ec0ae609b1ee882f1bf2d113d10 doc: Explain new test logging
+c  2020-03-31 23:41:52 +0100 cd3b1569d9ad8e24d3a222aff74e0c254baadf79 Correctly compute redeemScript from witnessScript for signrawtransaction
+pr 2020-04-01 04:06:55 +0100 eb773f106314fc7d193a29b40f713557bb2ba639 Merge #18486: doc: Explain new test logging
+pr 2020-03-31 20:39:15 +0100 72ef366564394bad798484ba935c96b68579043f Merge #18472: test: Remove unsafe BOOST_TEST_MESSAGE
+pr 2020-03-31 21:35:03 +0100 d2db25233cf0dd1d2668a4aafc4fc94c47c11849 Merge #18474: test: check that peer is connected when calling sync_*
+cr 2020-04-01 11:49:15 +0100 740614e3c36b1b6906e30027990bbca92d3edd9b qt: Translations update pre-branch
+cr 2020-04-01 13:19:34 +0100 0753efd9dc8f2e756955a726afbb602d904e1e92 rpc: Remove deprecated "size" from mempool txs
+v  2020-04-01 15:18:59 +0100 4670006762ffce654bb12edb5a7e64ad004122a7 test: remove redundant sync_with_ping after
+c  2020-04-01 16:30:02 +0100 6112a209828c43930f677c45461339cdf68a56e9 test: replace (send_message + sync_with_ping) with send_and_ping
+c  2020-04-01 17:25:13 +0100 fab32557f25c93fecb7bb33f78fdf3e9160c89e5 rpc: Make rpc documentation not depend on rpc
+cr 2020-04-01 22:34:47 +0100 222253e37d9702181fe754d776177962d6794f30 chainparams: Bump assumed valid hash
+c  2020-04-02 05:31:54 +0100 a46484c8b3715725f5dc0b8ad1bf921880ed9af1 build: Detect gmtime_* definitions via configure
+pr 2020-04-02 11:47:13 +0100 5c1ba3a10a18c6edee20f27f3609ffbbbaa2e8f3 Merge #18358: util: fix compilation with mingw-w64 7.0.0
+cr 2020-04-02 13:28:11 +0100 0660119ac372c2863d14060ac1bc9bc243771f94 Drop unintended bitcoin-tx dependency on libeventgit 
+cr 2020-04-02 13:35:10 +0100 01a3392b1b778fa4fcf568013326d6ea1de4fb3b Drop bitcoin-wallet dependency on libevent
+cr 2020-04-02 13:52:47 +0100 fad2f68353944c83cad7b77415645215ae3f1093 init: Replace URL_WEBSITE with PACKAGE_URL
+pr 2020-04-02 14:07:55 +0100 6bdd515ccf1b0d3ec5990467db87b9f7963b9b51 Merge #16923: wallet: Handle duplicate fileid exception
+cr 2020-04-02 14:09:55 +0100 7b2975ae8f09851bc559378978e84a560a4e6211 doc: Update webchat URLs in README.md
+pr 2020-04-02 14:43:49 +0100 b83565625e32b22395e28c1965b2e42fc17f04d7 Merge #18500: chainparams: Bump assumed valid hash
+c  2020-04-02 14:56:20 +0100 fa1793c1c44a3f75a09f9c636467b8274c541bdd net: Pass connman const when relaying address
+c  2020-04-02 16:24:00 +0100 eca65caadcddf43b2dace111bd7e4b0a2a9556c2 Bugfix: RPC: Add missing commas and correct indentation of explicit ELISION
+c  2020-04-02 16:24:01 +0100 26dcf3958187cbdc9ffc9438a5eebfcaf607f7e9 Bugfix: RPC: Don't use a continuation elipsis after an elision elipsis
+c  2020-04-02 16:28:05 +0100 f32ab443a98e622afa601372454310aef1f380be Bugfix: RPC: JSON null is not "None"
+c  2020-04-02 16:29:32 +0100 fa1da3d4bfc0511a89f5b19d5a4d89e55ff7ccde test: Add basic addr relay test
+c  2020-04-02 17:00:28 +0100 b86cd155f6f661052042048aa7cfc2a397afe4f7 scripted-diff: Wallet: Rename mapAddressBook to m_address_book
+c  2020-04-02 17:01:36 +0100 144b2f85da4d51bf7d72b987888ddcaf5b429eed Wallet: Require usage of new CAddressBookData::setLabel to change label
+c  2020-04-02 17:02:07 +0100 65b6bdc2b164343ec3cc3d32a0297daff9e24fec Wallet: Add CAddressBookData::IsChange which returns true iff label has never been set
+cr 2020-04-02 17:02:56 +0100 8e64b8c84bcbd63caea06f3af087af1f0609eaf5 Wallet: New FindAddressBookEntry method to filter out change entries (and skip ->second everywhere)
+c  2020-04-02 17:25:17 +0100 c751d886f499257627b308b11ffaa51c22db6cc0 Wallet: Avoid treating change-in-the-addressbook as non-change everywhere
+c  2020-04-02 17:25:27 +0100 7b8e15728d1ad058a4b7d7569fd5d5ba6806ca28 rpc: Fix rpcRunLater race in walletpassphrase
+c  2020-04-02 17:37:41 +0100 6d2905f57aaeb3ec3b63d31043f7673ca10003f2 Wallet: Avoid unnecessary/redundant m_address_book lookups
+c  2020-04-02 17:37:42 +0100 b5795a788639305bab86a8b3f6b75d6ce81be083 Wallet: Add warning comments and assert to CWallet::DelAddressBook
+pr 2020-04-02 19:12:46 +0100 ff53433fe4ed06893d7c497a9687f326b0280d4e Merge #18494: test: replace (send_message + sync_with_ping) with send_and_ping
+pr 2020-04-02 22:06:23 +0100 0d71395848bbc2941862e7a0644f47212ec02e87 Merge #18464: doc: block-relay-only vs blocksonly
+cr 2020-04-02 22:19:53 +0100 570d769c6c59b9f6d1a2b95b2ed60432cb33b3ba guix: Build support for Windows
+cr 2020-04-02 22:19:54 +0100 91897c95e191d293eb27d8af15cbeafc5b8f3895 guix: Improve guix-build.sh documentation
+c  2020-04-02 22:19:55 +0100 df953a4c9a6143f45864757b706c88b6fa70545a guix: Appease shellcheck.
+c  2020-04-02 22:19:56 +0100 c4cce00eac691625b78b92f7dba0b7f57def19e5 guix: Remove dead links from README.
+c  2020-04-02 22:19:57 +0100 acf4b3b3b5accf60a19441a0298ef27001b78e72 guix: Make x86_64-w64-mingw32 builds reproducible
+c  2020-04-02 22:19:59 +0100 ef4f7e4c45c60a69406134122f091c77c6ef740f guix: Set the well-known timezone env var
+c  2020-04-02 22:20:00 +0100 93e41b7e3b54c17fd1b4c61ee95fc0dc2827e954 guix: Use gcc-8 for mingw-w64 instead of 7
+c  2020-04-02 22:20:01 +0100 360a9e0ad50a36ec79a1a160dbed3966689fd41c guix: Bump time-machine for mingw-w64 patches
+c  2020-04-02 22:20:02 +0100 ff821dd2a1c600488d11e7d9a20e9179ecc9144b guix: Reinstate make-ssp-fixed-gcc
+c  2020-04-02 22:20:03 +0100 3f1f03c67a8e9edf487f08d272adb18b0a3942c8 guix: Spelling fixes
+c  2020-04-02 22:20:04 +0100 449d8fe25bbe25daacfc67aa89ca32b0a3254c5a guix: Expand on INT trap message
+c  2020-04-02 22:20:05 +0100 35a96792dda9e78165b1598aeac7b2ab759e7be5 guix: Check mingw symbols, improve SSP fix docs
+pr 2020-04-02 23:50:29 +0100 dce6f3b29b4197b8eea91f5919d56eb222ea8959 Merge #18383: refactor: Check for overflow when calculating sum of tx outputs
+c  2020-04-03 01:30:40 +0100 facc332dc587898cbc582a6f66dba498ae4a634e fuzz: Avoid running over all inputs after merging them
+c  2020-04-03 02:02:34 +0100 faa64af960b64b522bb088e836c9d8cd6254c6c8 fuzz: Add CScriptNum::getint coverage
+pr 2020-04-03 11:10:28 +0100 6ec42df32b06f8b262f31e40065247dee83f7aa5 Merge #18426: scripts: previous_release: improve behaviour on failed download
+pr 2020-04-03 11:17:09 +0100 d478595fad6eb520793ed209ea7d9b04ee259a34 Merge #18382: doc: note the costs of fetching all pull requests
+pr 2020-04-03 11:24:38 +0100 be60e37e40413742a8e23c854b90438af5e3aabc Merge #18505: doc: Update webchat URLs in README.md
+c  2020-04-03 11:52:36 +0100 4928a995e9799c6c7ea84fa1efc4fef5b2ff7683 [doc] fix git add argument
+pr 2020-04-03 12:11:07 +0100 08c4994969be20ab268faed2793fb4b9f17722ee Merge #18503: init: Replace URL_WEBSITE with PACKAGE_URL
+pr 2020-04-03 12:37:11 +0100 f0d6487e290761a4fb03798240a351b5fddfdb38 Merge #18513: doc: fix git add argument
+c  2020-04-03 15:00:12 +0100 0ed2d8e07d3806d78d03a77d2153f22f9d733a07 test: add BIP37 remote crash bug [CVE-2013-5700] test to p2p_filter.py
+cr 2020-04-03 15:29:26 +0100 0eeb0468e7debb1dbe38242769207d22ed52c1df net: Hardcoded seeds update for 0.20
+cr 2020-04-03 15:47:59 +0100 9e071b00898aedd9632f105a22d976dc6dbc84b1 test: remove rapidcheck integration and tests
+c  2020-04-03 18:16:19 +0100 fa0189955ab0f458bac81f534cbd626e1b0ad2c1 fuzz: Extend descriptor fuzz test
+c  2020-04-03 18:32:17 +0100 fa86edf66d4d4ed04758333da45ed1b3b5892602 fuzz: Extend script fuzz test
+pr 2020-04-03 20:08:05 +0100 e35e118656e9638cce019d4eeffc5f1b8639d4f5 Merge #18508: RPC: Fix more formatting nits
+pr 2020-04-03 20:15:00 +0100 c8971547d9c9460fcbec6f54888df83f002c3dfd Merge #18499: rpc: Make rpc documentation not depend on call-time rpc args
+c  2020-04-03 21:11:08 +0100 3dc8c012f0a40756f3c4359dbe169c03d7c8a725 test: remaining replacements of (send_message+sync_with_ping) with send_and_ping
+c  2020-04-04 02:54:25 +0100 5ca90f8b598978437340bb8467f527b9edfb2bbf scripts: add MACHO lazy bindings check to security-check.py
+cr 2020-04-04 16:44:39 +0100 d6815a2313158862d448733954a73520f223deb6 refactor: drop boost::signals2 in validationinterface
+cr 2020-04-04 18:23:50 +0100 acf269e1463c84d51f2eef695089cbf9d03b547f tests: Add proof-of-work fuzzing harness
+pr 2020-04-04 21:41:07 +0100 4839560ee1c12d162605f8eade75e63c581d8688 Merge #18407: tests: Add proof-of-work fuzzing harness
+pr 2020-04-04 21:46:12 +0100 a3b61cf6416387eaac568b53451a0aebe128dfe1 Merge #18509: fuzz: Avoid running over all inputs after merging them
+pr 2020-04-04 21:47:21 +0100 490ae0e87b9abf74f5804852e4a52e368b40478a Merge #18520: test: remaining replacements of (send_message+sync_with_ping) with send_and_ping
+pr 2020-04-04 21:48:47 +0100 16b6d3422bf904de6fbd539c7073cc21827dd5a5 Merge #18519: fuzz: Extend script fuzz test
+pr 2020-04-04 21:49:55 +0100 e16da90d957a10d8a1731d3b9a71643d5962b609 Merge #18518: fuzz: Extend descriptor fuzz test
+pr 2020-04-04 21:51:44 +0100 94fd4a56ed1ca60b0d11c1bab15acab6c834441a Merge #18496: test: remove redundant sync_with_ping after add_p2p_connection
+pr 2020-04-04 21:53:19 +0100 483007749426a1f51ea591eaac383f19fdde9efb Merge #18510: fuzz: Add CScriptNum::getint coverage
+cr 2020-04-05 00:01:13 +0100 691e2a7af796c09b85423b45af54e354cd9c1e92 build: create test_fuzz library from src/test/fuzz/fuzz.cpp
+pr 2020-04-05 03:33:56 +0100 96a30b98c925b4ca63993759ddf7b4dd1fa58ec1 Merge #18528: build: create test_fuzz library from src/test/fuzz/fuzz.cpp
+cr 2020-04-05 03:46:24 +0100 fa6a00843447d53a5708ea3a629b9150cfe58be2 fuzz: Add process_messages harness
+pr 2020-04-05 14:18:11 +0100 cf21293ef7fd304efb0843abeb17adc6159ca927 Merge #18515: test: add BIP37 remote crash bug [CVE-2013-5700] test to p2p_filter.py
+c  2020-04-05 17:20:00 +0100 fa1a92224dd78de817d15bcda35a8310254e1a54 rpc: Avoid initialization-order-fiasco on static CRPCCommand tables
+c  2020-04-05 18:39:38 +0100 3e6f7377f600e47e5e3d439fc5d6ccf3db210038 Improve getbalances coverage in wallet_balance tests
+c  2020-04-05 18:40:25 +0100 7eacdc5167c8db94df84e206db85817bc64e4921 Shift coverage from getunconfirmedbalance to getbalances in wallet_abandonconflict tests
+c  2020-04-05 18:40:28 +0100 0306d78cb49d1684cc96ba3512b582a1fdaf78cc Use getbalances in wallet_address_types tests
+c  2020-04-06 01:00:34 +0100 7777e3624fabe4718675b2be8b088697b7ad4d0d scripted-diff: Replace strCommand with msg_type
+c  2020-04-06 02:03:17 +0100 c0c43ae1471347ea93614e9a25989f13b021f8a8 test: skip backwards compat tests if not compiled with wallet
+pr 2020-04-06 02:48:21 +0100 516ebe8a62de1906f8be9c4a144ea5753678eb4f Merge #18514: test: remove rapidcheck integration and tests
+c  2020-04-06 02:48:21 +0100 787f40668dc15980c3d6de028d7950c08175d84a Set LD_LIBRARY_PATH consistently in travis tests
+c  2020-04-06 02:48:21 +0100 b919efadff3d0393f4a8c3c1dc735f7ac5c665bb depends: Use default macos clang compiler
+c  2020-04-06 02:48:21 +0100 d54f64c6c700be0604190f52c84fc5f1cdd9f02f Add multiprocess travis configuration
+cr 2020-04-06 02:48:21 +0100 d6306466626635e6fee44385e6a688c8dc118eb5 libmultiprocess depends build
+cr 2020-04-06 02:48:21 +0100 e6e44eedd56ecaf59f3fabf8e07ab7dee0ddb1b6 Multiprocess build changes
+c  2020-04-06 07:08:56 +0100 a029805f57fa9a4ab9867c0d1e865675d57537c7 build: remove -Qunused-arguments workaround for clang + ccache
+pr 2020-04-06 12:38:32 +0100 adac12ae73e896e405e75b02a0a49c575d115b6e Merge #18506: net: Hardcoded seeds update for 0.20
+pr 2020-04-06 14:27:56 +0100 299544f9c5375810f3b4f70e68d2340fe689108a Merge #18534: test: skip backwards compat tests if not compiled with wallet
+cr 2020-04-06 14:58:51 +0100 cdfb8e7afa7648405dd6b957f47b1c7ab566a076 tests: Add fuzzing harness for HTTPRequest, libevent's evhttp and related functions
+c  2020-04-06 15:12:32 +0100 7fcdec0f326f7fb547ec9c651871842cf518ea38 Remove PID file at the very end
+pr 2020-04-06 15:46:07 +0100 fdeb445a34a97357c87416d80350f9b0b4f222ca Merge #18524: refactor: drop boost::signals2 in validationinterface
+c  2020-04-06 16:07:33 +0100 25e03ba1ff18ca06954786e512000648941b4dfb test: relax bumpfee dust_to_fee txsize an extra vbyte
+pr 2020-04-06 16:38:09 +0100 425a7f900ed824caa5d4a93991542c70171539fe Merge #18516: test: relax bumpfee dust_to_fee txsize an extra vbyte
+c  2020-04-06 17:37:50 +0100 b224b4e7bd8c52bb70d933c1bc524c0fe87ac0c1 test: wallet_bumpfee assertion fixup
+c  2020-04-06 17:53:49 +0100 fad691cafe083743a26f434488990f060ae4ac45 rpc: Make verifychain default values static, not depend on global args
+pr 2020-04-06 17:59:48 +0100 c0b389b33516fb3eaaad7c30bd11dba768882a7e Merge #18484: rpc: Correctly compute redeemScript from witnessScript for signrawtransaction
+c  2020-04-06 19:19:08 +0100 fa2251df5e3471e0d19d5d5c7780d34ee1498cee test: Use one node to avoid a race due to missing sync in rpc_signrawtransaction
+pr 2020-04-06 19:21:53 +0100 54d5ba3d9cb45d8417ecca0f09c68d865d0c423c Merge #18540: test: wallet_bumpfee assertion fixup
+pr 2020-04-06 19:29:35 +0100 75021e80ee4439dddadbe8c586cee04b85ac110c Merge #18487: rpc: Fix rpcRunLater race in walletpassphrase
+pr 2020-04-06 20:06:09 +0100 c31bcaf203b5154117eee1cb2496dca2b7c3853d Merge #18458: net: Add missing cs_vNodes lock
+pr 2020-04-06 20:51:18 +0100 c5966a87d1fdd7a98f2baee5b2deddd541fdfb5a Merge #18192: Bugfix: Wallet: Safely deal with change in the address book
+pr 2020-04-06 21:21:47 +0100 abc145c9a4aef8ec269b7e0a3e9403cff9970fe4 Merge #18543: test: Use one node to avoid a race due to missing sync in rpc_signrawtransaction
+c  2020-04-06 21:52:04 +0100 2952c46b923042f2de801f319e03ed5c4c4eb735 Wallet: Replace CAddressBookData.name with GetLabel() method
+c  2020-04-06 21:52:04 +0100 7a2ecf16df938dd95d3130a46082def7a02338eb Wallet: Change IsMine check in CWallet::DelAddressBook from assert to failure
+c  2020-04-06 21:52:04 +0100 d7092c392e10889cd7a080b3d22ed6446a59b87a QA: Test that change doesn't turn into non-change when spent in an avoid-reuse wallet
+c  2020-04-06 22:19:19 +0100 56fe839e4e6d837b95b920a524570d11f7c3c5ce qt: Fix Window -> Minimize menu item
+cr 2020-04-06 22:25:25 +0100 55608455cbed4234f26f62ed9ff500fe5dbc21c4 Make a fuzzer-based copy of the prevector randomized test
+c  2020-04-06 22:39:38 +0100 eda8309bfc6a8c94f0b7c076d1cccc86c1011cbc Assert immediately rather than caching failure
+c  2020-04-06 22:39:42 +0100 402ad5aaca9509d45d861d77eb6431d6e1944f91 Only run sanity check once at the end
+c  2020-04-06 22:39:42 +0100 c2ccadc26a04358b11539097c1aadb8d11b85c21 Merge and generalize case 3 and case 6
+c  2020-04-06 22:51:38 +0100 b1d24d1d031a2b2ce67bf846bafa1c3a499b7553 Reorder the test instructions by number
+pr 2020-04-07 11:43:07 +0100 d12568e2f8863e76d82de3c6bd933e9f5c20daaf Merge #18549: qt: Fix Window -> Minimize menu item
+pr 2020-04-07 11:47:38 +0100 63dad673487d3623f9076721d2a1924263272eb9 Merge #18546: Bugfix: Wallet: Safely deal with change in the address book [part 2]
+pr 2020-04-07 16:46:17 +0100 1b151e3ffce7c1a2ee46bf280cc1d96775d1f91e Merge #18532: rpc: Avoid initialization-order-fiasco on static CRPCCommand tables
+c  2020-04-07 20:53:40 +0100 3c61abbbc847d725f30d169278d84655571407c1 Do not clear validationinterface entries being executed
+c  2020-04-07 20:54:41 +0100 2276339a176f83ffe8ceefb3e41ecca8601aa13b Add test for UnregisterAllValidationInterfaces bug
+c  2020-04-07 21:57:34 +0100 850847309458f43fc7ce6c13fa08c86e1cae042a Avoid non-trivial global constants in SHA-NI code

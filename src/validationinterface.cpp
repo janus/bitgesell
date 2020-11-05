@@ -113,7 +113,7 @@ CMainSignals& GetMainSignals()
 {
     return g_signals;
 }
-
+/**
 void RegisterValidationInterface(CValidationInterface* pwalletIn) {
     ValidationInterfaceConnections& conns = g_signals.m_internals->m_connMainSignals[pwalletIn];
     conns.UpdatedBlockTip = g_signals.m_internals->UpdatedBlockTip.connect(std::bind(&CValidationInterface::UpdatedBlockTip, pwalletIn, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
@@ -125,7 +125,7 @@ void RegisterValidationInterface(CValidationInterface* pwalletIn) {
     conns.BlockChecked = g_signals.m_internals->BlockChecked.connect(std::bind(&CValidationInterface::BlockChecked, pwalletIn, std::placeholders::_1, std::placeholders::_2));
     conns.NewPoWValidBlock = g_signals.m_internals->NewPoWValidBlock.connect(std::bind(&CValidationInterface::NewPoWValidBlock, pwalletIn, std::placeholders::_1, std::placeholders::_2));
 }
-
+**/
 void RegisterSharedValidationInterface(std::shared_ptr<CValidationInterface> pwalletIn) {
     // Each connection captures pwalletIn to ensure that each callback is
     // executed before pwalletIn is destroyed. For more details see #18338.

@@ -581,15 +581,17 @@ BGLd_LDADD = \
   $(LIBBGL_UTIL) \
   $(LIBBGL_ZMQ) \
   $(LIBBGL_CONSENSUS) \
-  $(LIBBGL_CRYPTO) \
+  $(LIBBGL_CRYPTO)
+
 # BGLd & BGL-node binaries #
+
 BGL_common_sources = BGLd.cpp
 BGL_common_cppflags = $(AM_CPPFLAGS) $(BGL_INCLUDES)
 BGL_common_cxxflags = $(AM_CXXFLAGS) $(PIE_FLAGS)
 BGL_common_ldflags = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
 
 if TARGET_WINDOWS
-b_common_sources += BGLd-res.rc
+b_common_sources = BGLd-res.rc
 endif
 
 BGL_common_ldadd = \
@@ -608,11 +610,11 @@ BGL_common_ldadd = \
 
 BGL_common_ldadd += $(BOOST_LIBS) $(BDB_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS) $(ZMQ_LIBS)
 
-BGLd_SOURCES = $(BGL_common_sources)
-BGLd_CPPFLAGS = $(BGL_common_cppflags)
-BGLd_CXXFLAGS = $(BGL_common_cxxflags)
-BGLd_LDFLAGS = $(BGL_common_ldflags)
-BGLd_LDADD = $(BGL_common_ldadd)
+BGLd_SOURCES += $(BGL_common_sources)
+BGLd_CPPFLAGS += $(BGL_common_cppflags)
+BGLd_CXXFLAGS += $(BGL_common_cxxflags)
+BGLd_LDFLAGS += $(BGL_common_ldflags)
+BGLd_LDADD += $(BGL_common_ldadd)
 
 BGL_node_SOURCES = $(BGL_common_sources)
 BGL_node_CPPFLAGS = $(BGL_common_cppflags)
@@ -665,13 +667,13 @@ BGL_wallet_SOURCES = BGL-wallet.cpp
 BGL_wallet_CPPFLAGS = $(BGL_common_cppflags)
 BGL_wallet_CXXFLAGS = $(BGL_common_cxxflags)
 BGL_wallet_LDFLAGS = $(BGL_common_ldflags)
-BGL_wallet_LDADD = $(LIBBGL_WALLET_TOOL) $(BGL_common_ldadd)
+BGL_wallet_LDADD = $(BGL_common_ldadd)
 
 if TARGET_WINDOWS
 BGL_wallet_SOURCES += BGL-wallet-res.rc
 endif
 
-BGL_wallet_LDADD = \
+BGL_wallet_LDADD += \
   $(LIBBGL_WALLET_TOOL) \
   $(LIBBGL_WALLET) \
   $(LIBBGL_COMMON) \
