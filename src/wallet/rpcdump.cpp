@@ -798,9 +798,9 @@ UniValue dumpwallet(const JSONRPCRequest& request)
     const Optional<int> tip_height = locked_chain->getHeight();
     file << strprintf("# * Best block at time of backup was %i (%s),\n", tip_height.get_value_or(-1), tip_height ? locked_chain->getBlockHash(*tip_height).ToString() : "(missing block hash)");
     file << strprintf("#   mined on %s\n", tip_height ? FormatISO8601DateTime(locked_chain->getBlockTime(*tip_height)) : "(missing block time)");
-    int64_t block_time = 0;
-    CHECK_NONFATAL(wallet.chain().findBlock(wallet.GetLastBlockHash(), FoundBlock().time(block_time)));
-    file << "\n";
+    //int64_t block_time = 0;
+    //CHECK_NONFATAL(wallet.chain().findBlock(wallet.GetLastBlockHash(), FoundBlock().time(block_time)));
+    //file << "\n";
 
     // add the base58check encoded extended master if the wallet uses HD
     CKeyID seed_id = spk_man.GetHDChain().seed_id;

@@ -27,11 +27,8 @@ FUZZ_TARGETS = \
   test/fuzz/blockundo_deserialize \
   test/fuzz/bloom_filter \
   test/fuzz/bloomfilter_deserialize \
-<<<<<<< HEAD
-=======
   test/fuzz/chain \
   test/fuzz/checkqueue \
->>>>>>> 57890b255... tests: Add fuzzing harness for classes/functions in checkqueue.h
   test/fuzz/coins_deserialize \
   test/fuzz/cuckoocache \
   test/fuzz/decode_tx \
@@ -255,14 +252,14 @@ BGL_TESTS =\
   test/validationinterface_tests.cpp \
   test/versionbits_tests.cpp
 
-if ENABLE_PROPERTY_TESTS
-BGL_TESTS += \
-  test/key_properties.cpp
+#if ENABLE_PROPERTY_TESTS
+#BGL_TESTS += \
+#  test/key_properties.cpp
 
-BGL_TEST_SUITE += \
-  test/gen/crypto_gen.cpp \
-  test/gen/crypto_gen.h
-endif
+#BGL_TEST_SUITE += \
+#  test/gen/crypto_gen.cpp \
+#  test/gen/crypto_gen.h
+#endif
 
 if ENABLE_WALLET
 BGL_TESTS += \

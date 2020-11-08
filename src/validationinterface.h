@@ -172,7 +172,7 @@ protected:
 struct MainSignalsInstance;
 class CMainSignals {
 private:
-    std::unique_ptr<MainSignalsInstance> m_internals;
+    //std::unique_ptr<MainSignalsInstance> m_internals;
 
     friend void ::RegisterValidationInterface(CValidationInterface*);
     friend void ::UnregisterValidationInterface(CValidationInterface*);
@@ -180,6 +180,7 @@ private:
     friend void ::CallFunctionInValidationInterfaceQueue(std::function<void ()> func);
 
 public:
+    std::unique_ptr<MainSignalsInstance> m_internals;
     /** Register a CScheduler to give callbacks which should run in the background (may only be called once) */
     void RegisterBackgroundSignalScheduler(CScheduler& scheduler);
     /** Unregister a CScheduler to give callbacks which should run in the background - these callbacks will now be dropped! */

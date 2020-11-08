@@ -255,8 +255,10 @@ public:
                 *time_max = index->GetBlockTimeMax();
             }
         }
-        return FillBlock(nullptr, ancestor_out, lock);
+        //return FillBlock(nullptr, ancestor_out, lock);
+        return true;
     }
+    /**
     bool findAncestorByHash(const uint256& block_hash, const uint256& ancestor_hash, const FoundBlock& ancestor_out) override
     {
         WAIT_LOCK(cs_main, lock);
@@ -274,7 +276,7 @@ public:
         // Using & instead of && below to avoid short circuiting and leaving
         // output uninitialized.
         return FillBlock(ancestor, ancestor_out, lock) & FillBlock(block1, block1_out, lock) & FillBlock(block2, block2_out, lock);
-    }
+    } **/
     void findCoins(std::map<COutPoint, Coin>& coins) override { return FindCoins(m_node, coins); }
     double guessVerificationProgress(const uint256& block_hash) override
     {
