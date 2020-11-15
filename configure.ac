@@ -4,8 +4,8 @@ define(_CLIENT_VERSION_MINOR, 20)
 define(_CLIENT_VERSION_REVISION, 99)
 define(_CLIENT_VERSION_BUILD, 0)
 define(_CLIENT_VERSION_RC, 0)
-define(_CLIENT_VERSION_IS_RELEASE, true)
-define(_COPYRIGHT_YEAR, 2012)
+define(_CLIENT_VERSION_IS_RELEASE, false)
+define(_COPYRIGHT_YEAR, 2020)
 define(_COPYRIGHT_HOLDERS,[The %s developers])
 define(_COPYRIGHT_HOLDERS_SUBSTITUTION,[[BGL Core]])
 AC_INIT([BGL Core],m4_join([.], _CLIENT_VERSION_MAJOR, _CLIENT_VERSION_MINOR, _CLIENT_VERSION_REVISION, m4_if(_CLIENT_VERSION_BUILD, [0], [], _CLIENT_VERSION_BUILD))m4_if(_CLIENT_VERSION_RC, [0], [], [rc]_CLIENT_VERSION_RC),[https://github.com/BGL/BGL/issues],[BGL],[https://BGLcore.org/])
@@ -41,16 +41,6 @@ AM_INIT_AUTOMAKE([1.13 no-define subdir-objects foreign])
 dnl faketime messes with timestamps and causes configure to be re-run.
 dnl --disable-maintainer-mode can be used to bypass this.
 AM_MAINTAINER_MODE([enable])
-AH_TOP([#ifndef LIBSECP256K1_CONFIG_H])
-AH_TOP([#define LIBSECP256K1_CONFIG_H])
-AH_BOTTOM([#endif /*LIBSECP256K1_CONFIG_H*/])
-AM_INIT_AUTOMAKE([foreign subdir-objects])
-
-# Set -g if CFLAGS are not already set, which matches the default autoconf
-# behavior (see PROG_CC in the Autoconf manual) with the exception that we don't
-# set -O2 here because we set it in any case (see further down).
-: ${CFLAGS="-g"}
-LT_INIT
 
 dnl make the compilation flags quiet unless V=1 is used
 AM_SILENT_RULES([yes])
@@ -139,13 +129,6 @@ AC_ARG_WITH([miniupnpc],
   [enable UPNP (default is yes if libminiupnpc is found)])],
   [use_upnp=$withval],
   [use_upnp=auto])
-
-AC_ARG_ENABLE(libevent,
-    [AS_HELP_STRING([--disable-libevent],
-                    [Disable using EVENT package (used for Debian packages)])],,
-    [enable_libevent=$enableval],
-    [enable_libevent=yes])
-
 
 AC_ARG_ENABLE([upnp-default],
   [AS_HELP_STRING([--enable-upnp-default],
@@ -248,6 +231,16 @@ AC_ARG_ENABLE([zmq],
   [disable ZMQ notifications])],
   [use_zmq=$enableval],
   [use_zmq=yes])
+
+AC_ARG_ENABLE([bip70],
+  [AS_HELP_STRING([--enable-bip70],
+  [BIP70 (payment protocol) support in the GUI (no longer supported)])],
+  [enable_bip70=$enableval],
+  [enable_bip70=no])
+
+if test x$enable_bip70 != xno; then
+  AC_MSG_ERROR([BIP70 is no longer supported!])
+fi
 
 AC_ARG_WITH([libmultiprocess],
   [AS_HELP_STRING([--with-libmultiprocess=yes|no|auto],
@@ -644,13 +637,6 @@ case $host in
          if test x$bdb_prefix != x; then
            CPPFLAGS="$CPPFLAGS -I$bdb_prefix/include"
            LIBS="$LIBS -L$bdb_prefix/lib"
-         fi
-         openssl_prefix=`$BREW --prefix openssl 2>/dev/null`
-         gmp_prefix=`$BREW --prefix gmp 2>/dev/null`
-         if test x$openssl_prefix != x; then
-           PKG_CONFIG_PATH="$openssl_prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
-           export PKG_CONFIG_PATH
-           CRYPTO_CPPFLAGS="-I$openssl_prefix/include"
          fi
          if test x$qt5_prefix != x; then
            PKG_CONFIG_PATH="$qt5_prefix/lib/pkgconfig:$PKG_CONFIG_PATH"
@@ -1316,9 +1302,6 @@ if test x$use_pkgconfig = xyes; then
   m4_ifdef(
     [PKG_CHECK_MODULES],
     [
-      if test x$use_qr != xno; then
-        BGL_QT_CHECK([PKG_CHECK_MODULES([QR], [libqrencode], [have_qrencode=yes], [have_qrencode=no])])
-      fi
       if test x$build_BGL_cli$build_BGLd$BGL_enable_qt$use_tests$use_bench != xnonononono; then
         PKG_CHECK_MODULES([EVENT], [libevent >= 2.0.21], [use_libevent=yes], [AC_MSG_ERROR(libevent version 2.0.21 or greater not found.)])
         if test x$TARGET_OS != xwindows; then
@@ -1330,7 +1313,7 @@ if test x$use_pkgconfig = xyes; then
 else
 
   if test x$build_BGL_cli$build_BGLd$BGL_enable_qt$use_tests$use_bench != xnonononono; then
-    AC_CHECK_HEADER([event2/event.h],, AC_MSG_ERROR(libevent headers missing),)
+    AC_CHECK_HEADER([event2/event.h], [use_libevent=yes], AC_MSG_ERROR(libevent headers missing),)
     AC_CHECK_LIB([event],[main],EVENT_LIBS=-levent,AC_MSG_ERROR(libevent missing))
     if test x$TARGET_OS != xwindows; then
       AC_CHECK_LIB([event_pthreads],[main],EVENT_PTHREADS_LIBS=-levent_pthreads,AC_MSG_ERROR(libevent_pthreads missing))
@@ -1448,51 +1431,6 @@ AC_MSG_RESULT($build_BGL_cli)
 AC_MSG_CHECKING([whether to build BGL-tx])
 AM_CONDITIONAL([BUILD_BGL_TX], [test x$build_BGL_tx = xyes])
 AC_MSG_RESULT($build_BGL_tx)
-#set ecmult window size
-if test x"$req_ecmult_window" = x"auto"; then
-  set_ecmult_window=15
-else
-  set_ecmult_window=$req_ecmult_window
-fi
-
-error_window_size=['window size for ecmult precomputation not an integer in range [2..24] or "auto"']
-case $set_ecmult_window in
-''|*[[!0-9]]*)
-  # no valid integer
-  AC_MSG_ERROR($error_window_size)
-  ;;
-*)
-  if test "$set_ecmult_window" -lt 2 -o "$set_ecmult_window" -gt 24 ; then
-    # not in range
-    AC_MSG_ERROR($error_window_size)
-  fi
-  AC_DEFINE_UNQUOTED(ECMULT_WINDOW_SIZE, $set_ecmult_window, [Set window size for ecmult precomputation])
-  ;;
-esac
-
-#set ecmult gen precision
-if test x"$req_ecmult_gen_precision" = x"auto"; then
-  set_ecmult_gen_precision=4
-else
-  set_ecmult_gen_precision=$req_ecmult_gen_precision
-fi
-
-case $set_ecmult_gen_precision in
-2|4|8)
-  AC_DEFINE_UNQUOTED(ECMULT_GEN_PREC_BITS, $set_ecmult_gen_precision, [Set ecmult gen precision bits])
-  ;;
-*)
-  AC_MSG_ERROR(['ecmult gen precision not 2, 4, 8 or "auto"'])
-  ;;
-esac
-
-if test x"$use_tests" = x"yes"; then
-  SECP_OPENSSL_CHECK
-  if test x"$has_openssl_ec" = x"yes"; then
-    if test x"$enable_openssl_tests" != x"no"; then
-      AC_DEFINE(ENABLE_OPENSSL_TESTS, 1, [Define this symbol if OpenSSL EC functions are available])
-      SECP_TEST_INCLUDES="$SSL_CFLAGS $CRYPTO_CFLAGS $CRYPTO_CPPFLAGS"
-      SECP_TEST_LIBS="$CRYPTO_LIBS"
 
 AC_MSG_CHECKING([whether to build BGL-wallet])
 AM_CONDITIONAL([BUILD_BGL_WALLET], [test x$build_BGL_wallet = xyes])
@@ -1571,10 +1509,6 @@ if test x$BGL_enable_qt != xno; then
     AC_DEFINE([USE_DBUS],[1],[Define if dbus support should be compiled in])
   fi
   AC_MSG_RESULT($BGL_enable_qt_dbus)
-if test x"$set_bignum" = x"gmp"; then
-  SECP_LIBS="$SECP_LIBS $GMP_LIBS"
-  SECP_INCLUDES="$SECP_INCLUDES $GMP_CPPFLAGS"
-fi
 
   dnl enable qr support
   AC_MSG_CHECKING([whether to build GUI with support for QR codes])
@@ -1737,42 +1671,6 @@ LIBS_TEMP="$LIBS"
 unset LIBS
 LIBS="$LIBS_TEMP"
 
-if test x"$use_external_default_callbacks" = x"yes"; then
-  AC_DEFINE(USE_EXTERNAL_DEFAULT_CALLBACKS, 1, [Define this symbol if an external implementation of the default callbacks is used])
-fi
-
-if test x"$enable_experimental" = x"yes"; then
-  AC_MSG_NOTICE([******])
-  AC_MSG_NOTICE([WARNING: experimental build])
-  AC_MSG_NOTICE([Experimental features do not have stable APIs or properties, and may not be safe for production use.])
-  AC_MSG_NOTICE([Building ECDH module: $enable_module_ecdh])
-  AC_MSG_NOTICE([******])
-else
-  if test x"$enable_module_ecdh" = x"yes"; then
-    AC_MSG_ERROR([ECDH module is experimental. Use --enable-experimental to allow.])
-  fi
-  if test x"$set_asm" = x"arm"; then
-    AC_MSG_ERROR([ARM assembly optimization is experimental. Use --enable-experimental to allow.])
-  fi
-fi
-
-AC_CONFIG_HEADERS([src/libsecp256k1-config.h])
-AC_CONFIG_FILES([Makefile libsecp256k1.pc])
-AC_SUBST(SECP_INCLUDES)
-AC_SUBST(SECP_LIBS)
-AC_SUBST(SECP_TEST_LIBS)
-AC_SUBST(SECP_TEST_INCLUDES)
-AM_CONDITIONAL([ENABLE_COVERAGE], [test x"$enable_coverage" = x"yes"])
-AM_CONDITIONAL([USE_TESTS], [test x"$use_tests" != x"no"])
-AM_CONDITIONAL([USE_EXHAUSTIVE_TESTS], [test x"$use_exhaustive_tests" != x"no"])
-AM_CONDITIONAL([USE_BENCHMARK], [test x"$use_benchmark" = x"yes"])
-AM_CONDITIONAL([USE_ECMULT_STATIC_PRECOMPUTATION], [test x"$set_precomp" = x"yes"])
-AM_CONDITIONAL([ENABLE_MODULE_ECDH], [test x"$enable_module_ecdh" = x"yes"])
-AM_CONDITIONAL([ENABLE_MODULE_RECOVERY], [test x"$enable_module_recovery" = x"yes"])
-AM_CONDITIONAL([USE_EXTERNAL_ASM], [test x"$use_external_asm" = x"yes"])
-AM_CONDITIONAL([USE_ASM_ARM], [test x"$set_asm" = x"arm"])
-
-dnl make sure nothing new is exported so that we don't break the cache
 PKGCONFIG_PATH_TEMP="$PKG_CONFIG_PATH"
 unset PKG_CONFIG_PATH
 PKG_CONFIG_PATH="$PKGCONFIG_PATH_TEMP"
