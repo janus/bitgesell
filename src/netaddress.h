@@ -188,7 +188,7 @@ class CNetAddr
         std::string ToStringIP() const;
         uint64_t GetHash() const;
         bool GetInAddr(struct in_addr* pipv4Addr) const;
-        Network GetNetClass() const;
+        uint32_t GetNetClass() const;
 
         //! For IPv4, mapped IPv4, SIIT translated IPv4, Teredo, 6to4 tunneled addresses, return the relevant IPv4 address as a uint32.
         uint32_t GetLinkedIPv4() const;
@@ -210,14 +210,6 @@ class CNetAddr
         friend bool operator==(const CNetAddr& a, const CNetAddr& b);
         friend bool operator!=(const CNetAddr& a, const CNetAddr& b) { return !(a == b); }
         friend bool operator<(const CNetAddr& a, const CNetAddr& b);
-
-        /**
-         * Whether this address should be relayed to other peers even if we can't reach it ourselves.
-         */
-        bool IsRelayable() const
-        {
-            return IsIPv4() || IsIPv6() || IsTor();
-        }
 
         /**
          * Serialize to a stream.

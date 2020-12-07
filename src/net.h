@@ -14,6 +14,7 @@
 #include <compat.h>
 #include <crypto/siphash.h>
 #include <hash.h>
+#include <limitedmap.h>
 #include <net_permissions.h>
 #include <netaddress.h>
 #include <optional.h>
@@ -115,12 +116,17 @@ struct CSerializedNetMsg
     std::string m_type;
 };
 
+const std::vector<std::string> CONNECTION_TYPE_DOC{
+    "outbound-full-relay (default automatic connections)",
+    "block-relay-only (does not relay transactions or addresses)",
+    "inbound (initiated by the peer)",
+    "manual (added via addnode RPC or -addnode/-connect configuration options)",
+    "addr-fetch (short-lived automatic connection for soliciting addresses)",
+    "feeler (short-lived automatic connection for testing addresses)"};
+
 /** Different types of connections to a peer. This enum encapsulates the
  * information we have available at the time of opening or accepting the
- * connection. Aside from INBOUND, all types are initiated by us.
- *
- * If adding or removing types, please update CONNECTION_TYPE_DOC in
- * src/rpc/net.cpp. */
+ * connection. Aside from INBOUND, all types are initiated by us. */
 enum class ConnectionType {
     /**
      * Inbound connections are those initiated by a peer. This is the only
@@ -154,7 +160,7 @@ enum class ConnectionType {
      *   evict only if this longer-known peer is offline.
      * - move node addresses from New to Tried table, so that we have more
      *   connectable addresses in our AddrMan.
-     * Note that in the literature ("Eclipse Attacks on Bitcoin’s Peer-to-Peer Network")
+     * Note that in the literature ("Eclipse Attacks on BGL’s Peer-to-Peer Network")
      * only the latter feature is referred to as "feeler connections",
      * although in our codebase feeler connections encompass test-before-evict as well.
      * We make these connections approximately every FEELER_INTERVAL:
@@ -168,9 +174,7 @@ enum class ConnectionType {
      * attacks. By not relaying transactions or addresses, these connections
      * are harder to detect by a third party, thus helping obfuscate the
      * network topology. We automatically attempt to open
-     * MAX_BLOCK_RELAY_ONLY_ANCHORS using addresses from our anchors.dat. Then
-     * addresses from our AddrMan if MAX_BLOCK_RELAY_ONLY_CONNECTIONS
-     * isn't reached yet.
+     * MAX_BLOCK_RELAY_ONLY_CONNECTIONS using addresses from our AddrMan.
      */
     BLOCK_RELAY,
 
@@ -256,16 +260,13 @@ public:
     ~CConnman();
     bool Start(CScheduler& scheduler, const Options& options);
 
-    // TODO: Remove NO_THREAD_SAFETY_ANALYSIS. Lock cs_vNodes before reading the variable vNodes.
-    //
-    // When removing NO_THREAD_SAFETY_ANALYSIS be aware of the following lock order requirements:
-    // * CheckForStaleTipAndEvictPeers locks cs_main before indirectly calling GetExtraOutboundCount
-    //   which locks cs_vNodes.
-    // * ProcessMessage locks cs_main and g_cs_orphans before indirectly calling ForEachNode which
-    //   locks cs_vNodes.
-    //
-    // Thus the implicit locking order requirement is: (1) cs_main, (2) g_cs_orphans, (3) cs_vNodes.
-    void Stop() NO_THREAD_SAFETY_ANALYSIS;
+    void StopThreads();
+    void StopNodes();
+    void Stop()
+    {
+        StopThreads();
+        StopNodes();
+    };
 
     void Interrupt();
     bool GetNetworkActive() const { return fNetworkActive; };
@@ -460,11 +461,6 @@ private:
     void RecordBytesRecv(uint64_t bytes);
     void RecordBytesSent(uint64_t bytes);
 
-    /**
-     * Return vector of current BLOCK_RELAY peers.
-     */
-    std::vector<CAddress> GetCurrentBlockRelayOnlyConns() const;
-
     // Whether the node should be passed out in ForEach* callbacks
     static bool NodeFullyConnected(const CNode* pnode);
 
@@ -565,12 +561,6 @@ private:
     NetEventsInterface* m_msgproc;
     /** Pointer to this node's banman. May be nullptr - check existence before dereferencing. */
     BanMan* m_banman;
-
-    /**
-     * Addresses that were saved during the previous clean shutdown. We'll
-     * attempt to make block-relay-only connections to them.
-     */
-    std::vector<CAddress> m_anchors;
 
     /** SipHasher seeds for deterministic randomness */
     const uint64_t nSeed0, nSeed1;
@@ -755,7 +745,7 @@ public:
     // read and deserialize data
     virtual int Read(const char *data, unsigned int bytes) = 0;
     // decomposes a message from the context
-    virtual Optional<CNetMessage> GetMessage(const CMessageHeader::MessageStartChars& message_start, std::chrono::microseconds time, uint32_t& out_err) = 0;
+    virtual Optional<CNetMessage> GetMessage(std::chrono::microseconds time, uint32_t& out_err) = 0;
     virtual ~TransportDeserializer() {}
 };
 
@@ -789,8 +779,9 @@ private:
     }
 
 public:
-    V1TransportDeserializer(const NodeId node_id, int nTypeIn, int nVersionIn)
-        : m_node_id(node_id),
+    V1TransportDeserializer(const CChainParams& chain_params, const NodeId node_id, int nTypeIn, int nVersionIn)
+        : m_chain_params(chain_params),
+          m_node_id(node_id),
           hdrbuf(nTypeIn, nVersionIn),
           vRecv(nTypeIn, nVersionIn)
     {
@@ -813,12 +804,16 @@ public:
         if (ret < 0) Reset();
         return ret;
     }
-    Optional<CNetMessage> GetMessage(const CMessageHeader::MessageStartChars& message_start, std::chrono::microseconds time, uint32_t& out_err_raw_size) override;
+    Optional<CNetMessage> GetMessage(std::chrono::microseconds time, uint32_t& out_err_raw_size) override;
 };
 
 /** The TransportSerializer prepares messages for the network transport
  */
+class TransportSerializer {
+public:
+    // prepare message for transport (header construction, error-correction computation, payload encryption, etc.)
     virtual void prepareForTransport(CSerializedNetMsg& msg, std::vector<unsigned char>& header) = 0;
+    virtual ~TransportSerializer() {}
 };
 
 class V1TransportSerializer  : public TransportSerializer {
@@ -980,8 +975,8 @@ public:
     std::vector<CAddress> vAddrToSend;
     std::unique_ptr<CRollingBloomFilter> m_addr_known{nullptr};
     bool fGetAddr{false};
-    int64_t nNextAddrSend GUARDED_BY(cs_sendProcessing){0};
-    int64_t nNextLocalAddrSend GUARDED_BY(cs_sendProcessing){0};
+    std::chrono::microseconds m_next_addr_send GUARDED_BY(cs_sendProcessing){0};
+    std::chrono::microseconds m_next_local_addr_send GUARDED_BY(cs_sendProcessing){0};
 
     // List of block ids we still have announce.
     // There is no final sorting before sending, as they are always sent immediately

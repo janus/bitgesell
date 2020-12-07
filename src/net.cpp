@@ -4,7 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include <config/BGL-config.h>
+#include <config/bitcoin-config.h>
 #endif
 
 #include <net.h>
@@ -46,12 +46,6 @@ static_assert(MINIUPNPC_API_VERSION >= 10, "miniUPnPc API version >= 10 assumed"
 #include <unordered_map>
 
 #include <math.h>
-
-/** Maximum number of block-relay-only anchor connections */
-static constexpr size_t MAX_BLOCK_RELAY_ONLY_ANCHORS = 2;
-static_assert (MAX_BLOCK_RELAY_ONLY_ANCHORS <= static_cast<size_t>(MAX_BLOCK_RELAY_ONLY_CONNECTIONS), "MAX_BLOCK_RELAY_ONLY_ANCHORS must not exceed MAX_BLOCK_RELAY_ONLY_CONNECTIONS.");
-/** Anchor IP address database file name */
-const char* const ANCHORS_DATABASE_FILENAME = "anchors.dat";
 
 // How often to dump addresses to peers.dat
 static constexpr std::chrono::minutes DUMP_PEERS_INTERVAL{15};
@@ -610,7 +604,7 @@ void CNode::copyStats(CNodeStats &stats, const std::vector<bool> &m_asmap)
         ping_wait = GetTime<std::chrono::microseconds>() - m_ping_start.load();
     }
 
-    // Raw ping time is in microseconds, but show it to user as whole seconds (BGL users should be well used to small numbers with many decimal places by now :)
+    // Raw ping time is in microseconds, but show it to user as whole seconds (Bitcoin users should be well used to small numbers with many decimal places by now :)
     stats.m_ping_usec = nPingUsecTime;
     stats.m_min_ping_usec  = nMinPingUsecTime;
     stats.m_ping_wait_usec = count_microseconds(ping_wait);
@@ -654,7 +648,7 @@ bool CNode::ReceiveMsgBytes(const char *pch, unsigned int nBytes, bool& complete
         if (m_deserializer->Complete()) {
             // decompose a transport agnostic CNetMessage from the deserializer
             uint32_t out_err_raw_size{0};
-            Optional<CNetMessage> result{m_deserializer->GetMessage(Params().MessageStart(), time, out_err_raw_size)};
+            Optional<CNetMessage> result{m_deserializer->GetMessage(time, out_err_raw_size)};
             if (!result) {
                 // Message deserialization failed.  Drop the message but don't disconnect the peer.
                 // store the size of the corrupt message
@@ -745,7 +739,7 @@ const uint256& V1TransportDeserializer::GetMessageHash() const
     return data_hash;
 }
 
-Optional<CNetMessage> V1TransportDeserializer::GetMessage(const CMessageHeader::MessageStartChars& message_start, const std::chrono::microseconds time, uint32_t& out_err_raw_size)
+Optional<CNetMessage> V1TransportDeserializer::GetMessage(const std::chrono::microseconds time, uint32_t& out_err_raw_size)
 {
     // decompose a single CNetMessage from the TransportDeserializer
     Optional<CNetMessage> msg(std::move(vRecv));
@@ -1093,8 +1087,6 @@ void CConnman::AcceptConnection(const ListenSocket& hListenSocket) {
     // According to the internet TCP_NODELAY is not carried into accepted sockets
     // on all platforms.  Set it again here just to be sure.
     SetSocketNoDelay(hSocket);
-
-    int bannedlevel = m_banman ? m_banman->IsBannedLevel(addr) : 0;
 
     // Don't accept connections from banned peers.
     bool banned = m_banman && m_banman->IsBanned(addr);
@@ -1699,6 +1691,20 @@ void CConnman::ThreadDNSAddressSeed()
         seeds_right_now = seeds.size();
     }
 
+    // goal: only query DNS seed if address need is acute
+    // * If we have a reasonable number of peers in addrman, spend
+    //   some time trying them first. This improves user privacy by
+    //   creating fewer identifying DNS requests, reduces trust by
+    //   giving seeds less influence on the network topology, and
+    //   reduces traffic to the seeds.
+    // * When querying DNS seeds query a few at once, this ensures
+    //   that we don't give DNS seeds the ability to eclipse nodes
+    //   that query them.
+    // * If we continue having problems, eventually query all the
+    //   DNS seeds, and if that fails too, also try the fixed seeds.
+    //   (done in ThreadOpenConnections)
+    const std::chrono::seconds seeds_wait_time = (addrman.size() >= DNSSEEDS_DELAY_PEER_THRESHOLD ? DNSSEEDS_DELAY_MANY_PEERS : DNSSEEDS_DELAY_FEW_PEERS);
+
     for (const std::string& seed : seeds) {
         if (seeds_right_now == 0) {
             seeds_right_now += DNSSEEDS_TO_QUERY_AT_ONCE;
@@ -1718,7 +1724,7 @@ void CConnman::ThreadDNSAddressSeed()
                     {
                         LOCK(cs_vNodes);
                         for (const CNode* pnode : vNodes) {
-                            nRelevant += pnode->fSuccessfullyConnected && !pnode->IsFeelerConn() && !pnode->IsAddrFetchConn() && !pnode->IsManualConn() && !pnode->fInbound;
+                            if (pnode->fSuccessfullyConnected && pnode->IsOutboundOrBlockRelayConn()) ++nRelevant;
                         }
                     }
                     if (nRelevant >= 2) {
@@ -1732,7 +1738,6 @@ void CConnman::ThreadDNSAddressSeed()
                     }
                 }
             }
-            seeds_right_now += DNSSEEDS_TO_QUERY_AT_ONCE;
         }
 
         if (interruptNet) return;
@@ -1744,6 +1749,7 @@ void CConnman::ThreadDNSAddressSeed()
                 if (!interruptNet.sleep_for(std::chrono::seconds{1})) return;
             } while (!fNetworkActive);
         }
+
         LogPrintf("Loading addresses from DNS seed %s\n", seed);
         if (HaveNameProxy()) {
             AddAddrFetch(seed);
@@ -1828,7 +1834,7 @@ int CConnman::GetExtraOutboundCount()
     {
         LOCK(cs_vNodes);
         for (const CNode* pnode : vNodes) {
-            if (!pnode->fInbound && !pnode->IsManualConn() && !pnode->IsFeelerConn() && !pnode->fDisconnect && !pnode->IsAddrFetchConn() && pnode->fSuccessfullyConnected) {
+            if (pnode->fSuccessfullyConnected && !pnode->fDisconnect && pnode->IsOutboundOrBlockRelayConn()) {
                 ++nOutbound;
             }
         }
@@ -1851,6 +1857,7 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
                 for (int i = 0; i < 10 && i < nLoop; i++)
                 {
                     if (!interruptNet.sleep_for(std::chrono::milliseconds(500)))
+                        return;
                 }
             }
             if (!interruptNet.sleep_for(std::chrono::milliseconds(500)))
@@ -1925,12 +1932,10 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
 
         ConnectionType conn_type = ConnectionType::OUTBOUND_FULL_RELAY;
         int64_t nTime = GetTimeMicros();
-        bool anchor = false;
         bool fFeeler = false;
 
         // Determine what type of connection to open. Opening
-        // BLOCK_RELAY connections to addresses from anchors.dat gets the highest
-        // priority. Then we open OUTBOUND_FULL_RELAY priority until we
+        // OUTBOUND_FULL_RELAY connections gets the highest priority until we
         // meet our full-relay capacity. Then we open BLOCK_RELAY connection
         // until we hit our block-relay-only peer limit.
         // GetTryNewOutboundPeer() gets set when a stale tip is detected, so we
@@ -1938,10 +1943,7 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
         // these conditions are met, check the nNextFeeler timer to decide if
         // we should open a FEELER.
 
-        if (!m_anchors.empty() && (nOutboundBlockRelay < m_max_outbound_block_relay)) {
-            conn_type = ConnectionType::BLOCK_RELAY;
-            anchor = true;
-        } else if (nOutboundFullRelay < m_max_outbound_full_relay) {
+        if (nOutboundFullRelay < m_max_outbound_full_relay) {
             // OUTBOUND_FULL_RELAY
         } else if (nOutboundBlockRelay < m_max_outbound_block_relay) {
             conn_type = ConnectionType::BLOCK_RELAY;
@@ -1962,13 +1964,6 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
         int nTries = 0;
         while (!interruptNet)
         {
-            // If we didn't find an appropriate destination after trying 100 addresses fetched from addrman,
-            // stop this loop, and let the outer loop run again (which sleeps, adds seed nodes, recalculates
-            // already-connected network ranges, ...) before trying new addrman addresses.
-            nTries++;
-            if (nTries > 100)
-                break;
-
             CAddrInfo addr = addrman.SelectTriedCollision();
 
             // SelectTriedCollision returns an invalid address if it is empty.
@@ -1985,6 +1980,13 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
             if (!addr.IsValid() || IsLocal(addr)) {
                 break;
             }
+
+            // If we didn't find an appropriate destination after trying 100 addresses fetched from addrman,
+            // stop this loop, and let the outer loop run again (which sleeps, adds seed nodes, recalculates
+            // already-connected network ranges, ...) before trying new addrman addresses.
+            nTries++;
+            if (nTries > 100)
+                break;
 
             if (!IsReachable(addr))
                 continue;
@@ -2023,19 +2025,6 @@ void CConnman::ThreadOpenConnections(const std::vector<std::string> connect)
             OpenNetworkConnection(addrConnect, (int)setConnected.size() >= std::min(nMaxConnections - 1, 2), &grant, nullptr, conn_type);
         }
     }
-}
-
-std::vector<CAddress> CConnman::GetCurrentBlockRelayOnlyConns() const
-{
-    std::vector<CAddress> ret;
-    LOCK(cs_vNodes);
-    for (const CNode* pnode : vNodes) {
-        if (pnode->IsBlockOnlyConn()) {
-            ret.push_back(pnode->addr);
-        }
-    }
-
-    return ret;
 }
 
 std::vector<AddedNodeInfo> CConnman::GetAddedNodeInfo()
@@ -2120,7 +2109,7 @@ void CConnman::ThreadOpenAddedConnections()
 }
 
 // if successful, this moves the passed grant to the constructed node
-void CConnman::OpenNetworkConnection(const CAddress& addrConnect, bool fCountFailure, CSemaphoreGrant *grantOutbound, const char *pszDest, bool m_addr_fetch, ConnectionType conn_type)
+void CConnman::OpenNetworkConnection(const CAddress& addrConnect, bool fCountFailure, CSemaphoreGrant *grantOutbound, const char *pszDest, ConnectionType conn_type)
 {
     assert(conn_type != ConnectionType::INBOUND);
 
@@ -2147,6 +2136,7 @@ void CConnman::OpenNetworkConnection(const CAddress& addrConnect, bool fCountFai
         return;
     if (grantOutbound)
         grantOutbound->MoveTo(pnode->grantOutbound);
+
     m_msgproc->InitializeNode(pnode);
     {
         LOCK(cs_vNodes);
@@ -2436,15 +2426,6 @@ bool CConnman::Start(CScheduler& scheduler, const Options& connOptions)
         }
     }
 
-    if (m_use_addrman_outgoing) {
-        // Load addresses from anchors.dat
-        m_anchors = ReadAnchors(GetDataDir() / ANCHORS_DATABASE_FILENAME);
-        if (m_anchors.size() > MAX_BLOCK_RELAY_ONLY_ANCHORS) {
-            m_anchors.resize(MAX_BLOCK_RELAY_ONLY_ANCHORS);
-        }
-        LogPrintf("%i block-relay-only anchors will be tried for connections.\n", m_anchors.size());
-    }
-
     uiInterface.InitMessage(_("Starting network threads...").translated);
 
     fAddressesInitialized = true;
@@ -2541,7 +2522,7 @@ void CConnman::Interrupt()
     }
 }
 
-void CConnman::Stop()
+void CConnman::StopThreads()
 {
     if (threadMessageHandler.joinable())
         threadMessageHandler.join();
@@ -2553,23 +2534,17 @@ void CConnman::Stop()
         threadDNSAddressSeed.join();
     if (threadSocketHandler.joinable())
         threadSocketHandler.join();
+}
 
-    if (fAddressesInitialized)
-    {
+void CConnman::StopNodes()
+{
+    if (fAddressesInitialized) {
         DumpAddresses();
         fAddressesInitialized = false;
-
-        if (m_use_addrman_outgoing) {
-            // Anchor connections are only dumped during clean shutdown.
-            std::vector<CAddress> anchors_to_dump = GetCurrentBlockRelayOnlyConns();
-            if (anchors_to_dump.size() > MAX_BLOCK_RELAY_ONLY_ANCHORS) {
-                anchors_to_dump.resize(MAX_BLOCK_RELAY_ONLY_ANCHORS);
-            }
-            DumpAnchors(GetDataDir() / ANCHORS_DATABASE_FILENAME, anchors_to_dump);
-        }
     }
 
     // Close sockets
+    LOCK(cs_vNodes);
     for (CNode* pnode : vNodes)
         pnode->CloseSocketDisconnect();
     for (ListenSocket& hListenSocket : vhListenSocket)
@@ -2578,10 +2553,10 @@ void CConnman::Stop()
                 LogPrintf("CloseSocket(hListenSocket) failed with error %s\n", NetworkErrorString(WSAGetLastError()));
 
     // clean up some globals (to help leak detection)
-    for (CNode *pnode : vNodes) {
+    for (CNode* pnode : vNodes) {
         DeleteNode(pnode);
     }
-    for (CNode *pnode : vNodesDisconnected) {
+    for (CNode* pnode : vNodesDisconnected) {
         DeleteNode(pnode);
     }
     vNodes.clear();
@@ -2596,7 +2571,7 @@ void CConnman::DeleteNode(CNode* pnode)
     assert(pnode);
     bool fUpdateConnectionTime = false;
     m_msgproc->FinalizeNode(pnode->GetId(), fUpdateConnectionTime);
-    if(fUpdateConnectionTime) {
+    if (fUpdateConnectionTime) {
         addrman.Connected(pnode->addr);
     }
     delete pnode;
@@ -2896,12 +2871,10 @@ CNode::CNode(NodeId idIn, ServiceFlags nLocalServicesIn, int nMyStartingHeightIn
     : nTimeConnected(GetSystemTimeInSeconds()),
     addr(addrIn),
     addrBind(addrBindIn),
-    fInbound(conn_type_in == ConnectionType::INBOUND),
     nKeyedNetGroup(nKeyedNetGroupIn),
     // Don't relay addr messages to peers that we connect to as block-relay-only
     // peers (to prevent adversaries from inferring these links from addr
     // traffic).
-    m_addr_known{conn_type_in == ConnectionType::BLOCK_RELAY ? nullptr : MakeUnique<CRollingBloomFilter>(5000, 0.001)},
     id(idIn),
     nLocalHostNonce(nLocalHostNonceIn),
     m_conn_type(conn_type_in),
@@ -2930,7 +2903,7 @@ CNode::CNode(NodeId idIn, ServiceFlags nLocalServicesIn, int nMyStartingHeightIn
         LogPrint(BCLog::NET, "Added connection peer=%d\n", id);
     }
 
-    m_deserializer = MakeUnique<V1TransportDeserializer>(V1TransportDeserializer(GetId(), SER_NETWORK, INIT_PROTO_VERSION));
+    m_deserializer = MakeUnique<V1TransportDeserializer>(V1TransportDeserializer(Params(), GetId(), SER_NETWORK, INIT_PROTO_VERSION));
     m_serializer = MakeUnique<V1TransportSerializer>(V1TransportSerializer());
 }
 

@@ -1,10 +1,11 @@
-# Copyright (c) 2013-2016 The BGL Core developers
+# Copyright (c) 2013-2016 The Bitcoin Core developers
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 FUZZ_TARGETS = \
   test/fuzz/addition_overflow \
   test/fuzz/addr_info_deserialize \
+  test/fuzz/addrdb \
   test/fuzz/address_deserialize \
   test/fuzz/addrman_deserialize \
   test/fuzz/asmap \
@@ -40,6 +41,7 @@ FUZZ_TARGETS = \
   test/fuzz/crypto_chacha20 \
   test/fuzz/crypto_chacha20_poly1305_aead \
   test/fuzz/crypto_common \
+  test/fuzz/crypto_hkdf_hmac_sha256_l32 \
   test/fuzz/crypto_poly1305 \
   test/fuzz/cuckoocache \
   test/fuzz/decode_tx \
@@ -127,7 +129,6 @@ FUZZ_TARGETS = \
   test/fuzz/script_deserialize \
   test/fuzz/script_flags \
   test/fuzz/script_interpreter \
-  test/fuzz/script_assets_test_minimizer \
   test/fuzz/script_ops \
   test/fuzz/script_sigcache \
   test/fuzz/script_sign \
@@ -189,10 +190,10 @@ FUZZ_SUITE_LD_COMMON = \
  $(LIBBGL_COMMON) \
  $(LIBBGL_UTIL) \
  $(LIBTEST_UTIL) \
+ $(LIBTEST_FUZZ) \
  $(LIBBGL_CONSENSUS) \
  $(LIBBGL_CRYPTO) \
  $(LIBBGL_CLI) \
- $(LIBTEST_FUZZ) \
  $(LIBUNIVALUE) \
  $(LIBLEVELDB) \
  $(LIBLEVELDB_SSE42) \
@@ -285,15 +286,6 @@ BGL_TESTS =\
   test/validation_flush_tests.cpp \
   test/validationinterface_tests.cpp \
   test/versionbits_tests.cpp
-
-if ENABLE_PROPERTY_TESTS
-BGL_TESTS += \
-  test/key_properties.cpp
-
-BGL_TEST_SUITE += \
-  test/gen/crypto_gen.cpp \
-  test/gen/crypto_gen.h
-endif
 
 if ENABLE_WALLET
 BGL_TESTS += \
@@ -1064,7 +1056,7 @@ test_fuzz_script_SOURCES = test/fuzz/script.cpp
 test_fuzz_script_BGL_consensus_CPPFLAGS = $(AM_CPPFLAGS) $(BGL_INCLUDES)
 test_fuzz_script_BGL_consensus_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 test_fuzz_script_BGL_consensus_LDADD = $(FUZZ_SUITE_LD_COMMON)
-test_fuzz_script_BGL_consensus_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+test_fuzz_script_BGL_consensus_LDFLAGS = $(FUZZ_SUITE_LDFLAGS_COMMON)
 test_fuzz_script_BGL_consensus_SOURCES = test/fuzz/script_BGL_consensus.cpp
 
 test_fuzz_script_descriptor_cache_CPPFLAGS = $(AM_CPPFLAGS) $(BGL_INCLUDES)
@@ -1090,12 +1082,6 @@ test_fuzz_script_interpreter_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 test_fuzz_script_interpreter_LDADD = $(FUZZ_SUITE_LD_COMMON)
 test_fuzz_script_interpreter_LDFLAGS = $(FUZZ_SUITE_LDFLAGS_COMMON)
 test_fuzz_script_interpreter_SOURCES = test/fuzz/script_interpreter.cpp
-
-test_fuzz_script_assets_test_minimizer_CPPFLAGS = $(AM_CPPFLAGS) $(BGL_INCLUDES)
-test_fuzz_script_assets_test_minimizer_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-test_fuzz_script_assets_test_minimizer_LDADD = $(FUZZ_SUITE_LD_COMMON)
-test_fuzz_script_assets_test_minimizer_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
-test_fuzz_script_assets_test_minimizer_SOURCES = test/fuzz/script_assets_test_minimizer.cpp
 
 test_fuzz_script_ops_CPPFLAGS = $(AM_CPPFLAGS) $(BGL_INCLUDES)
 test_fuzz_script_ops_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)

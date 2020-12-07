@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2019 The BGL Core developers
+// Copyright (c) 2009-2019 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -47,16 +47,7 @@ public:
     std::string GetCommand() const;
     bool IsCommandValid() const;
 
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action)
-    {
-        READWRITE(pchMessageStart);
-        READWRITE(pchCommand);
-        READWRITE(nMessageSize);
-        READWRITE(pchChecksum);
-    }
+    SERIALIZE_METHODS(CMessageHeader, obj) { READWRITE(obj.pchMessageStart, obj.pchCommand, obj.nMessageSize, obj.pchChecksum); }
 
     char pchMessageStart[MESSAGE_START_SIZE];
     char pchCommand[COMMAND_SIZE];
@@ -276,7 +267,7 @@ const std::vector<std::string>& getAllNetMessageTypes();
 
 /** nServices flags */
 enum ServiceFlags : uint64_t {
-    // NOTE: When adding here, be sure to update qt/guiutil.cpp's formatServicesStr too
+    // NOTE: When adding here, be sure to update serviceFlagToStr too
     // Nothing
     NODE_NONE = 0,
     // NODE_NETWORK means that the node is capable of serving the complete block chain. It is currently
@@ -375,17 +366,13 @@ public:
     CAddress(CService ipIn, ServiceFlags nServicesIn) : CService{ipIn}, nServices{nServicesIn} {};
     CAddress(CService ipIn, ServiceFlags nServicesIn, uint32_t nTimeIn) : CService{ipIn}, nTime{nTimeIn}, nServices{nServicesIn} {};
 
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action)
+    SERIALIZE_METHODS(CAddress, obj)
     {
-        if (ser_action.ForRead())
-            Init();
         SER_READ(obj, obj.nTime = TIME_INIT);
         int nVersion = s.GetVersion();
-        if (s.GetType() & SER_DISK)
+        if (s.GetType() & SER_DISK) {
             READWRITE(nVersion);
+        }
         if ((s.GetType() & SER_DISK) ||
             (nVersion != INIT_PROTO_VERSION && !(s.GetType() & SER_GETHASH))) {
             // The only time we serialize a CAddress object without nTime is in
@@ -443,14 +430,7 @@ public:
     CInv();
     CInv(uint32_t typeIn, const uint256& hashIn);
 
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action)
-    {
-        READWRITE(type);
-        READWRITE(hash);
-    }
+    SERIALIZE_METHODS(CInv, obj) { READWRITE(obj.type, obj.hash); }
 
     friend bool operator<(const CInv& a, const CInv& b);
 
@@ -478,7 +458,6 @@ public:
     uint32_t type;
     uint256 hash;
 };
-
 
 /** Convert a TX/WITNESS_TX/WTX CInv to a GenTxid. */
 GenTxid ToGenTxid(const CInv& inv);
