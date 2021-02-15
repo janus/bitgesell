@@ -1,22 +1,29 @@
-// Copyright (c) 2012-2019 The Bitcoin Core developers
+// Copyright (c) 2012-2020 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <addrdb.h>
 #include <addrman.h>
+#include <chainparams.h>
 #include <clientversion.h>
-#include <test/util/setup_common.h>
-#include <string>
-#include <boost/test/unit_test.hpp>
-#include <serialize.h>
-#include <streams.h>
+#include <cstdint>
 #include <net.h>
 #include <netbase.h>
-#include <chainparams.h>
+#include <serialize.h>
+#include <streams.h>
+#include <test/util/setup_common.h>
 #include <util/memory.h>
+#include <util/strencodings.h>
+#include <util/string.h>
 #include <util/system.h>
+#include <version.h>
+
+#include <boost/test/unit_test.hpp>
 
 #include <memory>
+#include <string>
+
+using namespace std::literals;
 
 class CAddrManSerializationMock : public CAddrMan
 {
@@ -81,11 +88,11 @@ BOOST_FIXTURE_TEST_SUITE(net_tests, BasicTestingSetup)
 BOOST_AUTO_TEST_CASE(cnode_listen_port)
 {
     // test default
-    unsigned short port = GetListenPort();
+    uint16_t port = GetListenPort();
     BOOST_CHECK(port == Params().GetDefaultPort());
     // test set port
-    unsigned short altPort = 12345;
-    BOOST_CHECK(gArgs.SoftSetArg("-port", std::to_string(altPort)));
+    uint16_t altPort = 12345;
+    BOOST_CHECK(gArgs.SoftSetArg("-port", ToString(altPort)));
     port = GetListenPort();
     BOOST_CHECK(port == altPort);
 }
@@ -99,6 +106,8 @@ BOOST_AUTO_TEST_CASE(caddrdb_read)
     BOOST_CHECK(Lookup("250.7.1.1", addr1, 8333, false));
     BOOST_CHECK(Lookup("250.7.2.2", addr2, 9999, false));
     BOOST_CHECK(Lookup("250.7.3.3", addr3, 9999, false));
+    BOOST_CHECK(Lookup("250.7.3.3"s, addr3, 9999, false));
+    BOOST_CHECK(!Lookup("250.7.3.3\0example.com"s, addr3, 9999, false));
 
     // Add three addresses to new table.
     CService source;
@@ -175,17 +184,94 @@ BOOST_AUTO_TEST_CASE(cnode_simple_test)
 
     CAddress addr = CAddress(CService(ipv4Addr, 7777), NODE_NETWORK);
     std::string pszDest;
-    bool fInboundIn = false;
 
-    // Test that fFeeler is false by default.
-    std::unique_ptr<CNode> pnode1 = MakeUnique<CNode>(id++, NODE_NETWORK, height, hSocket, addr, 0, 0, CAddress(), pszDest, fInboundIn);
-    BOOST_CHECK(pnode1->fInbound == false);
-    BOOST_CHECK(pnode1->fFeeler == false);
+    std::unique_ptr<CNode> pnode1 = MakeUnique<CNode>(id++, NODE_NETWORK, height, hSocket, addr, 0, 0, CAddress(), pszDest, ConnectionType::OUTBOUND_FULL_RELAY);
+    BOOST_CHECK(pnode1->IsFullOutboundConn() == true);
+    BOOST_CHECK(pnode1->IsManualConn() == false);
+    BOOST_CHECK(pnode1->IsBlockOnlyConn() == false);
+    BOOST_CHECK(pnode1->IsFeelerConn() == false);
+    BOOST_CHECK(pnode1->IsAddrFetchConn() == false);
+    BOOST_CHECK(pnode1->IsInboundConn() == false);
 
-    fInboundIn = true;
-    std::unique_ptr<CNode> pnode2 = MakeUnique<CNode>(id++, NODE_NETWORK, height, hSocket, addr, 1, 1, CAddress(), pszDest, fInboundIn);
-    BOOST_CHECK(pnode2->fInbound == true);
-    BOOST_CHECK(pnode2->fFeeler == false);
+    std::unique_ptr<CNode> pnode2 = MakeUnique<CNode>(id++, NODE_NETWORK, height, hSocket, addr, 1, 1, CAddress(), pszDest, ConnectionType::INBOUND);
+    BOOST_CHECK(pnode2->IsFullOutboundConn() == false);
+    BOOST_CHECK(pnode2->IsManualConn() == false);
+    BOOST_CHECK(pnode2->IsBlockOnlyConn() == false);
+    BOOST_CHECK(pnode2->IsFeelerConn() == false);
+    BOOST_CHECK(pnode2->IsAddrFetchConn() == false);
+    BOOST_CHECK(pnode2->IsInboundConn() == true);
+}
+
+BOOST_AUTO_TEST_CASE(cnetaddr_basic)
+{
+    CNetAddr addr;
+
+    // IPv4, INADDR_ANY
+    BOOST_REQUIRE(LookupHost("0.0.0.0", addr, false));
+    BOOST_REQUIRE(!addr.IsValid());
+    BOOST_REQUIRE(addr.IsIPv4());
+
+    BOOST_CHECK(addr.IsBindAny());
+    BOOST_CHECK_EQUAL(addr.ToString(), "0.0.0.0");
+
+    // IPv4, INADDR_NONE
+    BOOST_REQUIRE(LookupHost("255.255.255.255", addr, false));
+    BOOST_REQUIRE(!addr.IsValid());
+    BOOST_REQUIRE(addr.IsIPv4());
+
+    BOOST_CHECK(!addr.IsBindAny());
+    BOOST_CHECK_EQUAL(addr.ToString(), "255.255.255.255");
+
+    // IPv4, casual
+    BOOST_REQUIRE(LookupHost("12.34.56.78", addr, false));
+    BOOST_REQUIRE(addr.IsValid());
+    BOOST_REQUIRE(addr.IsIPv4());
+
+    BOOST_CHECK(!addr.IsBindAny());
+    BOOST_CHECK_EQUAL(addr.ToString(), "12.34.56.78");
+
+    // IPv6, in6addr_any
+    BOOST_REQUIRE(LookupHost("::", addr, false));
+    BOOST_REQUIRE(!addr.IsValid());
+    BOOST_REQUIRE(addr.IsIPv6());
+
+    BOOST_CHECK(addr.IsBindAny());
+    BOOST_CHECK_EQUAL(addr.ToString(), "::");
+
+    // IPv6, casual
+    BOOST_REQUIRE(LookupHost("1122:3344:5566:7788:9900:aabb:ccdd:eeff", addr, false));
+    BOOST_REQUIRE(addr.IsValid());
+    BOOST_REQUIRE(addr.IsIPv6());
+
+    BOOST_CHECK(!addr.IsBindAny());
+    BOOST_CHECK_EQUAL(addr.ToString(), "1122:3344:5566:7788:9900:aabb:ccdd:eeff");
+
+    // TORv2
+    addr.SetSpecial("6hzph5hv6337r6p2.onion");
+    BOOST_REQUIRE(addr.IsValid());
+    BOOST_REQUIRE(addr.IsTor());
+
+    BOOST_CHECK(!addr.IsBindAny());
+    BOOST_CHECK_EQUAL(addr.ToString(), "6hzph5hv6337r6p2.onion");
+
+    // Internal
+    addr.SetInternal("esffpp");
+    BOOST_REQUIRE(!addr.IsValid()); // "internal" is considered invalid
+    BOOST_REQUIRE(addr.IsInternal());
+
+    BOOST_CHECK(!addr.IsBindAny());
+    BOOST_CHECK_EQUAL(addr.ToString(), "esffpvrt3wpeaygy.internal");
+}
+
+BOOST_AUTO_TEST_CASE(cnetaddr_serialize)
+{
+    CNetAddr addr;
+    CDataStream s(SER_NETWORK, PROTOCOL_VERSION);
+
+    addr.SetInternal("a");
+    s << addr;
+    BOOST_CHECK_EQUAL(HexStr(s), "fd6b88c08724ca978112ca1bbdcafac2");
+    s.clear();
 }
 
 // prior to PR #14728, this test triggers an undefined behavior
@@ -209,7 +295,7 @@ BOOST_AUTO_TEST_CASE(ipv4_peer_with_ipv6_addrMe_test)
     in_addr ipv4AddrPeer;
     ipv4AddrPeer.s_addr = 0xa0b0c001;
     CAddress addr = CAddress(CService(ipv4AddrPeer, 7777), NODE_NETWORK);
-    std::unique_ptr<CNode> pnode = MakeUnique<CNode>(0, NODE_NETWORK, 0, INVALID_SOCKET, addr, 0, 0, CAddress{}, std::string{}, false);
+    std::unique_ptr<CNode> pnode = MakeUnique<CNode>(0, NODE_NETWORK, 0, INVALID_SOCKET, addr, 0, 0, CAddress{}, std::string{}, ConnectionType::OUTBOUND_FULL_RELAY);
     pnode->fSuccessfullyConnected.store(true);
 
     // the peer claims to be reaching us via IPv6
